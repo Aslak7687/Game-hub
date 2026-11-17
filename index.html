@@ -1,0 +1,363 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>game.space</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #111214;
+  color: #eeeeef;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 950px;
+  margin: auto;
+  padding: 45px 24px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 55px;
+}
+
+.logo {
+  font-size: 23px;
+  font-weight: bold;
+  letter-spacing: -1px;
+}
+
+.logo span { color: #999; }
+
+.small {
+  color: #777;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
+h1 {
+  font-size: 38px;
+  margin-bottom: 8px;
+  letter-spacing: -1.5px;
+}
+
+.subtitle { color: #858589; }
+
+.search {
+  width: 100%;
+  margin: 30px 0;
+  padding: 16px;
+  background: #1c1d20;
+  border: 1px solid #303136;
+  border-radius: 10px;
+  color: white;
+  font-size: 15px;
+  outline: none;
+}
+
+.search:focus, input:focus {
+  border-color: #777;
+}
+
+.section-title {
+  color: #888;
+  font-size: 12px;
+  letter-spacing: 2px;
+  margin: 35px 0 15px;
+}
+
+.games {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.game {
+  background: #1c1d20;
+  border: 1px solid #303136;
+  border-radius: 12px;
+  padding: 19px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: .2s;
+}
+
+.game:hover {
+  background: #25262a;
+  border-color: #555;
+  transform: translateY(-2px);
+}
+
+.game-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.game-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #eee;
+  text-decoration: none;
+}
+
+.game-url {
+  color: #777;
+  font-size: 12px;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+
+.game-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+button {
+  cursor: pointer;
+  background: #292a2e;
+  color: #ddd;
+  border: 1px solid #3a3b40;
+  border-radius: 7px;
+  padding: 8px 11px;
+}
+
+button:hover { background: #3b3c42; }
+
+.star {
+  font-size: 19px;
+  border: none;
+  background: transparent;
+  padding: 4px;
+}
+
+.star.active { color: #f4cf70; }
+
+.add-box {
+  background: #1c1d20;
+  border: 1px solid #303136;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 15px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #111214;
+  border: 1px solid #38393e;
+  border-radius: 7px;
+  color: white;
+  outline: none;
+}
+
+.add-button {
+  width: 100%;
+  background: #eee;
+  color: #111;
+  font-weight: bold;
+  padding: 12px;
+}
+
+.empty {
+  color: #777;
+  padding: 20px 0;
+  font-size: 14px;
+}
+
+footer {
+  text-align: center;
+  color: #555;
+  font-size: 12px;
+  padding: 50px 0 20px;
+}
+
+@media(max-width: 600px) {
+  .games { grid-template-columns: 1fr; }
+  header { margin-bottom: 35px; }
+  h1 { font-size: 30px; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+  <div class="logo">game<span>.</span>space</div>
+  <div class="small">YOUR GAME HUB</div>
+</header>
+
+<h1>Welcome back.</h1>
+<p class="subtitle">Your daily games, all in one place.</p>
+
+<input
+  class="search"
+  id="search"
+  placeholder="⌕  Search your games..."
+  oninput="render()"
+>
+
+<div class="section-title">★ YOUR FAVORITES</div>
+<div class="games" id="favorites"></div>
+
+<div class="section-title">ALL GAMES</div>
+<div class="games" id="games"></div>
+
+<div class="section-title">+ ADD A GAME</div>
+<div class="add-box">
+  <input id="newName" placeholder="Game name">
+  <input id="newUrl" placeholder="Website URL (https://...)">
+  <button class="add-button" onclick="addGame()">Add game +</button>
+</div>
+
+<footer>game.space · your personal game collection</footer>
+
+</div>
+
+<script>
+const defaults = [
+  {name:"Kabloom",url:"https://kabloom.io/"},
+  {name:"Farflung",url:"https://farflung.game/"},
+  {name:"Krillion",url:"https://krillion.io/"},
+  {name:"Noillirk",url:"https://noillirk.com/"},
+  {name:"Wordle",url:"https://www.nytimes.com/games/wordle/index.html"},
+  {name:"Plain",url:"https://playplain.app/"},
+  {name:"Chartered",url:"https://playchartered.com/"}
+];
+
+let games;
+
+try {
+  const saved = localStorage.getItem("games");
+  games = saved ? JSON.parse(saved) : defaults;
+  if (!Array.isArray(games)) games = defaults;
+} catch {
+  games = defaults;
+}
+
+function save() {
+  localStorage.setItem("games", JSON.stringify(games));
+}
+
+function makeCard(game) {
+  const card = document.createElement("div");
+  card.className = "game";
+
+  const info = document.createElement("div");
+  info.className = "game-info";
+
+  const link = document.createElement("a");
+  link.className = "game-name";
+  link.textContent = game.name;
+  link.href = game.url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+
+  const url = document.createElement("div");
+  url.className = "game-url";
+  url.textContent = new URL(game.url).hostname;
+
+  info.append(link, url);
+
+  const actions = document.createElement("div");
+  actions.className = "game-actions";
+
+  const star = document.createElement("button");
+  star.className = "star" + (game.favorite ? " active" : "");
+  star.textContent = game.favorite ? "★" : "☆";
+  star.title = "Toggle favorite";
+  star.onclick = () => {
+    game.favorite = !game.favorite;
+    save();
+    render();
+  };
+
+  const remove = document.createElement("button");
+  remove.textContent = "×";
+  remove.title = "Remove game";
+  remove.onclick = () => {
+    if (confirm("Remove " + game.name + "?")) {
+      games = games.filter(g => g !== game);
+      save();
+      render();
+    }
+  };
+
+  actions.append(star, remove);
+  card.append(info, actions);
+  return card;
+}
+
+function render() {
+  const query = document.getElementById("search").value.toLowerCase();
+
+  const matching = games.filter(g =>
+    g.name.toLowerCase().includes(query) ||
+    g.url.toLowerCase().includes(query)
+  );
+
+  const favorites = document.getElementById("favorites");
+  const all = document.getElementById("games");
+
+  favorites.replaceChildren();
+  all.replaceChildren();
+
+  const favoriteGames = matching.filter(g => g.favorite);
+  const otherGames = matching.filter(g => !g.favorite);
+
+  favoriteGames.forEach(g => favorites.append(makeCard(g)));
+  otherGames.forEach(g => all.append(makeCard(g)));
+
+  if (!favoriteGames.length) {
+    favorites.innerHTML = '<div class="empty">No favorites yet. Press ☆ on a game to pin it here.</div>';
+  }
+
+  if (!otherGames.length && !favoriteGames.length) {
+    all.innerHTML = '<div class="empty">No games found.</div>';
+  }
+}
+
+function addGame() {
+  const name = document.getElementById("newName").value.trim();
+  const rawUrl = document.getElementById("newUrl").value.trim();
+
+  if (!name || !rawUrl) {
+    alert("Please enter both a name and a URL.");
+    return;
+  }
+
+  let url;
+  try {
+    url = new URL(rawUrl);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      throw new Error();
+    }
+  } catch {
+    alert("Please enter a valid website URL starting with https://");
+    return;
+  }
+
+  games.push({name, url: url.href});
+  save();
+
+  document.getElementById("newName").value = "";
+  document.getElementById("newUrl").value = "";
+
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
